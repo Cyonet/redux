@@ -33,7 +33,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
     enhancer = preloadedState
     preloadedState = undefined
   }
-
+  // store插件, 用applyMiddleware链式调用中间件
   if (typeof enhancer !== 'undefined') {
     if (typeof enhancer !== 'function') {
       throw new Error('Expected the enhancer to be a function.')
@@ -51,7 +51,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
   let currentListeners = []
   let nextListeners = currentListeners
   let isDispatching = false
-
+  // 添加的Listener在正在dispatch中不会执行，需等下个dispatch
   function ensureCanMutateNextListeners() {
     if (nextListeners === currentListeners) {
       nextListeners = currentListeners.slice()
@@ -64,7 +64,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * @returns {any} The current state tree of your application.
    */
   function getState() {
-    if (isDispatching) {
+    if (isDispatching) {// dispatchg过程中不能获取store
       throw new Error(
         'You may not call store.getState() while the reducer is executing. ' +
           'The reducer has already received the state as an argument. ' +
@@ -98,6 +98,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * @param {Function} listener A callback to be invoked on every dispatch.
    * @returns {Function} A function to remove this change listener.
    */
+  // 像store上添加监听，每次dispatch后触发
   function subscribe(listener) {
     if (typeof listener !== 'function') {
       throw new Error('Expected the listener to be a function.')
@@ -116,7 +117,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
 
     ensureCanMutateNextListeners()
     nextListeners.push(listener)
-
+    // 取消监听
     return function unsubscribe() {
       if (!isSubscribed) {
         return
@@ -162,6 +163,9 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * Note that, if you use a custom middleware, it may wrap `dispatch()` to
    * return something else (for example, a Promise you can await).
    */
+  // 分发action改变state, action必须包含type属性的纯对象,如不是需要用中间件异步action
+  // reducer中的type要保住唯一，因为每个action都会分发给所有的reducer，因而reducer在未匹配type
+  // 需返回未改变的state
   function dispatch(action) {
     if (!isPlainObject(action)) {
       throw new Error(
@@ -187,7 +191,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
     } finally {
       isDispatching = false
     }
-
+    // 执行通过subscribe注册的事件
     const listeners = (currentListeners = nextListeners)
     for (let i = 0; i < listeners.length; i++) {
       const listener = listeners[i]
@@ -207,6 +211,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * @param {Function} nextReducer The reducer for the store to use instead.
    * @returns {void}
    */
+  // 替换state
   function replaceReducer(nextReducer) {
     if (typeof nextReducer !== 'function') {
       throw new Error('Expected the nextReducer to be a function.')
@@ -222,6 +227,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * For more information, see the observable proposal:
    * https://github.com/tc39/proposal-observable
    */
+  // 对state变化的观察者
   function observable() {
     const outerSubscribe = subscribe
     return {
@@ -258,7 +264,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
   // When a store is created, an "INIT" action is dispatched so that every
   // reducer returns their initial state. This effectively populates
   // the initial state tree.
-  dispatch({ type: ActionTypes.INIT })
+  dispatch({ type: ActionTypes.INIT }) // 初始化，每个reducer返回初始化state
 
   return {
     dispatch,
@@ -268,3 +274,4 @@ export default function createStore(reducer, preloadedState, enhancer) {
     [$$observable]: observable
   }
 }
+// eg: const {}

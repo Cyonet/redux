@@ -61,7 +61,7 @@ function getUnexpectedStateShapeWarningMessage(
     )
   }
 }
-
+// 验证reducer是否有初始化state返回，并且不要处理redux默认的type
 function assertReducerShape(reducers) {
   Object.keys(reducers).forEach(key => {
     const reducer = reducers[key]
@@ -115,10 +115,11 @@ function assertReducerShape(reducers) {
  * @returns {Function} A reducer function that invokes every reducer inside the
  * passed object, and builds a state object with the same shape.
  */
+// 合并reducer为一个，内部遍历每个reducer执行组装成新的state
 export default function combineReducers(reducers) {
   const reducerKeys = Object.keys(reducers)
   const finalReducers = {}
-  for (let i = 0; i < reducerKeys.length; i++) {
+  for (let i = 0; i < reducerKeys.length; i++) {// 拷贝reducers并过滤掉非reducer
     const key = reducerKeys[i]
 
     if (process.env.NODE_ENV !== 'production') {
@@ -145,7 +146,7 @@ export default function combineReducers(reducers) {
     shapeAssertionError = e
   }
 
-  return function combination(state = {}, action) {
+  return function combination(state = {}, action) { // 返回一个合并后的reducer
     if (shapeAssertionError) {
       throw shapeAssertionError
     }
